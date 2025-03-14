@@ -17,10 +17,6 @@ class MicService {
   bool _isListening = false;
   bool get isListening => _isListening;
   
-  // Debounce mechanism to prevent multiple detections in short succession
-  DateTime? _lastShotTime;
-  static const _debounceMilliseconds = 300; // Minimum time between shots
-  
   // Noise burst tracking
   int _consecutiveHighLevels = 0;
   static const _requiredConsecutiveHighLevels = 2; // Number of high readings to confirm a shot
@@ -40,7 +36,6 @@ class MicService {
     
     try {
       // Reset shot detection state
-      _lastShotTime = null;
       _consecutiveHighLevels = 0;
       
       // Start microphone monitoring
@@ -117,17 +112,10 @@ class MicService {
     }
   }
   
-  // Detect a shot with debouncing to prevent multiple triggers
+  // Detect a shot without debouncing to allow rapid fire detection
   void _detectShot(double level) {
-    final now = DateTime.now();
-    
-    // Check if enough time has passed since last shot (debouncing)
-    if (_lastShotTime == null || 
-        now.difference(_lastShotTime!).inMilliseconds > _debounceMilliseconds) {
-      _lastShotTime = now;
-      _shotDetectedController.add(level);
-      debugPrint('Shot detected! Level: $level');
-    }
+    _shotDetectedController.add(level);
+    debugPrint('Shot detected! Level: $level');
   }
   
   // Check and request microphone permission

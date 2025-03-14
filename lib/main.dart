@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shooter/providers/settings_provider.dart';
+import 'package:shooter/screens/history_screen.dart';
 import 'package:shooter/screens/home_screen.dart';
 import 'package:shooter/screens/settings_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -48,6 +49,7 @@ class ShooterApp extends StatelessWidget {
       routes: {
         '/': (context) => const HomeScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/history': (context) => const HistoryScreen(),
       },
     );
   }

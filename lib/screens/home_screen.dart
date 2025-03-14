@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shooter/models/shot.dart';
+import 'package:shooter/models/training_session.dart';
 import 'package:shooter/providers/settings_provider.dart';
 import 'package:shooter/services/audio_service.dart';
+import 'package:shooter/services/database_service.dart';
 import 'package:shooter/services/mic_service.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -17,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final AudioService _audioService = AudioService();
   final MicService _micService = MicService();
+  final DatabaseService _databaseService = DatabaseService();
   
   // Timer related variables
   DateTime? _startTime;
@@ -32,6 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isCountingDown = false;
   int _countdownValue = 0;
   Timer? _countdownTimer;
+  
+  // To track when session is stopped and in saved mode
+  bool _isSessionCompleted = false;
 
   @override
   void initState() {
@@ -80,10 +86,17 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_isRunning) return;
     
     final countdownSeconds = Provider.of<SettingsProvider>(context, listen: false).countdownSeconds;
+    final isSaveMode = Provider.of<SettingsProvider>(context, listen: false).isSaveTrainingMode;
     
     setState(() {
-      _shots = [];
+      // In quick training mode, always clear shots when starting
+      // In save mode, only clear shots if it's not a completed session
+      if (!isSaveMode || !_isSessionCompleted) {
+        _shots = [];
+      }
+      
       _isRunning = true;
+      _isSessionCompleted = false;
       
       if (countdownSeconds > 0) {
         _isCountingDown = true;
@@ -158,7 +171,64 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isRunning = false;
       _isCountingDown = false;
+      _isSessionCompleted = true;
     });
+  }
+  
+  // Clear the shots list
+  void _clearShots() {
+    setState(() {
+      _shots = [];
+      _isSessionCompleted = false;
+    });
+  }
+  
+  // Save the current training session to the database
+  Future<void> _saveSession() async {
+    if (_shots.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.noShotsToSave),
+        ),
+      );
+      return;
+    }
+    
+    // Calculate total duration based on the last shot time
+    final duration = _shots.isNotEmpty 
+        ? _shots.last.timeFromStart 
+        : const Duration(seconds: 0);
+    
+    final session = TrainingSession(
+      date: DateTime.now(),
+      duration: duration,
+      shots: List.from(_shots), // Create a copy of the shots list
+    );
+    
+    final result = await _databaseService.saveTrainingSession(session);
+    
+    if (result > 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.sessionSaved),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      setState(() {
+        _shots = [];
+        _isSessionCompleted = false;
+      });
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.errorSavingSession),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
   
   // Record a new shot
@@ -208,12 +278,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isSaveMode = Provider.of<SettingsProvider>(context).isSaveTrainingMode;
     
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.appTitle),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => Navigator.pushNamed(context, '/history'),
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () => Navigator.pushNamed(context, '/settings'),
@@ -298,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _shots.isEmpty
                   ? Center(
                       child: Text(
-                        'No shots recorded',
+                        l10n.noShotsRecorded,
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                     )
@@ -348,6 +423,33 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
             ),
+            
+            // Save/Clear buttons only shown in save training mode and when there are shots
+            if (isSaveMode && _shots.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isRunning ? null : _saveSession,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(l10n.saveSession),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isRunning ? null : _clearShots,
+                        child: Text(l10n.clearShots),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

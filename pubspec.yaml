@@ -25,6 +25,10 @@ dependencies:
   # Provider for state management
   provider: ^6.1.1
   
+  # Database storage for training sessions
+  sqflite: ^2.3.2
+  path: ^1.8.3
+  
   # Localization support
   flutter_localizations:
     sdk: flutter

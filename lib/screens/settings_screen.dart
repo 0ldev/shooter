@@ -14,6 +14,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late double _micSensitivity;
   late String _language;
   late int _countdownSeconds;
+  late bool _isSaveTrainingMode;
   
   @override
   void initState() {
@@ -22,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _micSensitivity = settings.microphoneSensitivity;
     _language = settings.language;
     _countdownSeconds = settings.countdownSeconds;
+    _isSaveTrainingMode = settings.isSaveTrainingMode;
   }
 
   @override
@@ -71,6 +73,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text('${_micSensitivity.toInt()}%'),
                 ),
               ],
+            ),
+            const SizedBox(height: 32),
+            
+            // Training mode selection
+            Text(
+              l10n.trainingMode,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: Text(_isSaveTrainingMode ? l10n.saveTrain : l10n.quickTrain),
+              subtitle: Text(_isSaveTrainingMode 
+                ? l10n.saveTrainDesc 
+                : l10n.quickTrainDesc),
+              value: _isSaveTrainingMode,
+              activeColor: Theme.of(context).colorScheme.primary,
+              onChanged: (value) async {
+                setState(() {
+                  _isSaveTrainingMode = value;
+                });
+                await settings.setSaveTrainingMode(value);
+              },
             ),
             const SizedBox(height: 32),
             
