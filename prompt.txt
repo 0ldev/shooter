@@ -1,0 +1,8 @@
+our objective in this program will be to make a mulitplatform (android/ios) application in flutter for gunowners to practice their draw time and shooting speed.
+Since we dont have an iphone avaiable, we will give more imprtance to android build, and we will test android build.
+the main function of the application is timing up to millisecons the draw speed and time between shots.
+We will need a timer widget, a list to display shots fired with the time they we shot in relation to the start of the timer and in relation to previous shot.
+We need a start/stop button which activates timer and microphone. 
+when timer starts there is a beeping sound. we can set a timer in seconds to start the timer so user has time to get in position and prepare to shoot. 
+The app will have a settings page where we can adjust microphone sensitivity in a 0-100% scale and language(pt-br/en-us).
+in the settings footer we will have a message developed by Albert Katri.

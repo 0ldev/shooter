@@ -1,0 +1,7 @@
+rootProject.ext {
+    namespace = "com.example.audio_streamer"
+}
+
+android {
+    namespace rootProject.ext.namespace
+}
