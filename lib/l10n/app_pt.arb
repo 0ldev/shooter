@@ -43,5 +43,6 @@
     "quickTrain": "Treino Rápido",
     "saveTrainDesc": "Salve sessões para análise posterior",
     "quickTrainDesc": "Prática rápida sem salvar dados",
-    "noShotsRecorded": "Nenhum tiro registrado"
+    "noShotsRecorded": "Nenhum tiro registrado",
+    "mustClearOrSaveBeforeStart": "Por favor, salve ou limpe os tiros antes de iniciar uma nova sessão"
 }

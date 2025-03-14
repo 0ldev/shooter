@@ -43,5 +43,6 @@
     "quickTrain": "Quick Training",
     "saveTrainDesc": "Save sessions for analysis later",
     "quickTrainDesc": "Quick practice without saving data",
-    "noShotsRecorded": "No shots recorded"
+    "noShotsRecorded": "No shots recorded",
+    "mustClearOrSaveBeforeStart": "Please save or clear shots before starting a new session"
 }

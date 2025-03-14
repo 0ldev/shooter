@@ -90,8 +90,8 @@ class _HomeScreenState extends State<HomeScreen> {
     
     setState(() {
       // In quick training mode, always clear shots when starting
-      // In save mode, only clear shots if it's not a completed session
-      if (!isSaveMode || !_isSessionCompleted) {
+      // In save mode, we don't clear shots - this requires user to clear them manually
+      if (!isSaveMode) {
         _shots = [];
       }
       
@@ -280,6 +280,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final isSaveMode = Provider.of<SettingsProvider>(context).isSaveTrainingMode;
     
+    // Determine if the start button should be disabled
+    // In save mode, if there are shots and not currently running, disable start
+    final bool disableStartButton = isSaveMode && _shots.isNotEmpty && !_isRunning;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.appTitle),
@@ -323,17 +327,31 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             // Single control button that toggles between Start/Stop
             ElevatedButton(
-              onPressed: _toggleTimer,
+              onPressed: disableStartButton ? null : _toggleTimer,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isRunning ? Colors.red : Colors.green,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 20),
+                disabledBackgroundColor: Colors.grey,
               ),
               child: Text(
                 _isRunning ? l10n.stop : l10n.start,
                 style: const TextStyle(fontSize: 18),
               ),
             ),
+            // Display a hint text when start is disabled
+            if (disableStartButton)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  l10n.mustClearOrSaveBeforeStart,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
             // Shots list header
             Container(
