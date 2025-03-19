@@ -7,7 +7,7 @@ import 'package:shooter/providers/settings_provider.dart';
 import 'package:shooter/services/audio_service.dart';
 import 'package:shooter/services/database_service.dart';
 import 'package:shooter/services/mic_service.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:shooter/l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

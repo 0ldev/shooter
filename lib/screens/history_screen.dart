@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shooter/models/training_session.dart';
 import 'package:shooter/services/database_service.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:shooter/l10n/app_localizations.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});

@@ -7,7 +7,7 @@ import 'package:shooter/providers/settings_provider.dart';
 import 'package:shooter/screens/history_screen.dart';
 import 'package:shooter/screens/home_screen.dart';
 import 'package:shooter/screens/settings_screen.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:shooter/l10n/app_localizations.dart'; // Updated import path
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
