@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'dart:io' show Platform;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shooter/providers/settings_provider.dart';
@@ -28,7 +30,7 @@ class ShooterApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settingsProvider = Provider.of<SettingsProvider>(context);
-    
+
     return MaterialApp(
       title: 'Shooter Timer',
       locale: Locale(settingsProvider.language),
@@ -45,6 +47,23 @@ class ShooterApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        // Use platform-adaptive properties
+        appBarTheme: AppBarTheme(
+          backgroundColor:
+              Platform.isIOS ? CupertinoColors.systemGroupedBackground : null,
+          foregroundColor: Platform.isIOS ? CupertinoColors.label : null,
+        ),
+        // Make buttons follow iOS styling when on iOS
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape:
+                Platform.isIOS
+                    ? const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                    )
+                    : null,
+          ),
+        ),
       ),
       routes: {
         '/': (context) => const HomeScreen(),

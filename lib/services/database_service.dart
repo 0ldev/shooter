@@ -1,6 +1,8 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:shooter/models/shot.dart';
 import 'package:shooter/models/training_session.dart';
 
@@ -20,13 +22,19 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'shooter_database.db');
-    
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDb,
-    );
+    // Use different path handling strategy based on platform
+    String dbPath;
+
+    if (Platform.isIOS) {
+      // For iOS, use getApplicationDocumentsDirectory
+      Directory documentsDirectory = await getApplicationDocumentsDirectory();
+      dbPath = join(documentsDirectory.path, 'shooter_database.db');
+    } else {
+      // For Android and others, use getDatabasesPath
+      dbPath = join(await getDatabasesPath(), 'shooter_database.db');
+    }
+
+    return await openDatabase(dbPath, version: 1, onCreate: _createDb);
   }
 
   Future<void> _createDb(Database db, int version) async {
@@ -39,7 +47,7 @@ class DatabaseService {
         shot_count INTEGER NOT NULL
       )
     ''');
-    
+
     // Create shots table with foreign key to training_sessions
     await db.execute('''
       CREATE TABLE shots (
@@ -67,20 +75,16 @@ class DatabaseService {
 
         // Insert all shots with the session ID
         for (final shot in session.shots) {
-          await txn.insert(
-            'shots',
-            {
-              'session_id': sessionId,
-              'time_from_start': shot.timeFromStart.inMilliseconds,
-            },
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
+          await txn.insert('shots', {
+            'session_id': sessionId,
+            'time_from_start': shot.timeFromStart.inMilliseconds,
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
-        
+
         // Return the session ID after successful transaction
         return sessionId;
       });
-      
+
       return 1; // Success
     } catch (e) {
       debugPrint('Error saving training session: $e');
@@ -92,7 +96,7 @@ class DatabaseService {
   Future<List<TrainingSession>> getAllSessions() async {
     try {
       final db = await database;
-      
+
       // Get all sessions
       final List<Map<String, dynamic>> sessionMaps = await db.query(
         'training_sessions',
@@ -100,47 +104,53 @@ class DatabaseService {
       );
 
       // Convert the maps to TrainingSession objects
-      return Future.wait(sessionMaps.map((sessionMap) async {
-        // Get shots for each session
-        final List<Map<String, dynamic>> shotMaps = await db.query(
-          'shots',
-          where: 'session_id = ?',
-          whereArgs: [sessionMap['id']],
-          orderBy: 'time_from_start',
-        );
-
-        // Convert shot maps to Shot objects
-        final shots = shotMaps.map((shotMap) {
-          final timeFromStart = Duration(milliseconds: shotMap['time_from_start']);
-          
-          return Shot(
-            timestamp: DateTime.now(), // We don't store exact timestamps
-            timeFromStart: timeFromStart,
-            timeFromPreviousShot: null, // Will calculate below
+      return Future.wait(
+        sessionMaps.map((sessionMap) async {
+          // Get shots for each session
+          final List<Map<String, dynamic>> shotMaps = await db.query(
+            'shots',
+            where: 'session_id = ?',
+            whereArgs: [sessionMap['id']],
+            orderBy: 'time_from_start',
           );
-        }).toList();
 
-        // Calculate split times
-        for (int i = 1; i < shots.length; i++) {
-          final currentShot = shots[i];
-          final previousShot = shots[i - 1];
-          
-          // Create a new Shot with the calculated timeFromPreviousShot
-          shots[i] = Shot(
-            timestamp: currentShot.timestamp,
-            timeFromStart: currentShot.timeFromStart,
-            timeFromPreviousShot: currentShot.timeFromStart - previousShot.timeFromStart,
+          // Convert shot maps to Shot objects
+          final shots =
+              shotMaps.map((shotMap) {
+                final timeFromStart = Duration(
+                  milliseconds: shotMap['time_from_start'],
+                );
+
+                return Shot(
+                  timestamp: DateTime.now(), // We don't store exact timestamps
+                  timeFromStart: timeFromStart,
+                  timeFromPreviousShot: null, // Will calculate below
+                );
+              }).toList();
+
+          // Calculate split times
+          for (int i = 1; i < shots.length; i++) {
+            final currentShot = shots[i];
+            final previousShot = shots[i - 1];
+
+            // Create a new Shot with the calculated timeFromPreviousShot
+            shots[i] = Shot(
+              timestamp: currentShot.timestamp,
+              timeFromStart: currentShot.timeFromStart,
+              timeFromPreviousShot:
+                  currentShot.timeFromStart - previousShot.timeFromStart,
+            );
+          }
+
+          // Create and return the TrainingSession with its shots
+          return TrainingSession(
+            id: sessionMap['id'],
+            date: DateTime.parse(sessionMap['date']),
+            duration: Duration(milliseconds: sessionMap['duration']),
+            shots: shots,
           );
-        }
-
-        // Create and return the TrainingSession with its shots
-        return TrainingSession(
-          id: sessionMap['id'],
-          date: DateTime.parse(sessionMap['date']),
-          duration: Duration(milliseconds: sessionMap['duration']),
-          shots: shots,
-        );
-      }).toList());
+        }).toList(),
+      );
     } catch (e) {
       debugPrint('Error getting training sessions: $e');
       return [];
@@ -151,14 +161,10 @@ class DatabaseService {
   Future<bool> deleteSession(int id) async {
     try {
       final db = await database;
-      
+
       // Delete session (shots will be cascade deleted due to foreign key)
-      await db.delete(
-        'training_sessions',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-      
+      await db.delete('training_sessions', where: 'id = ?', whereArgs: [id]);
+
       return true;
     } catch (e) {
       debugPrint('Error deleting training session: $e');
